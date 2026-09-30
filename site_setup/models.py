@@ -15,6 +15,7 @@ class MenuLink(models.Model):
         blank=True,
         null=True,
         default=None,
+        related_name='menu',
     )
 
     def __str__(self):
