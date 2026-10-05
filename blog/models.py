@@ -3,6 +3,7 @@ from django.db import models
 from django_summernote.models import AbstractAttachment
 from utils.imagens import resize_image
 from utils.rands import slugify
+from django.urls import reverse
 
 
 class PostAttachment(AbstractAttachment):
@@ -36,7 +37,7 @@ class Tag(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify_new(self.name, 4)
+            self.slug = slugify(self.name, 4)
         return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -56,7 +57,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify_new(self.name, 4)
+            self.slug = slugify(self.name, 4)
         return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -80,17 +81,24 @@ class Page(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify_new(self.title, 4)
+            self.slug = slugify(self.title, 4)
         return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.title
 
-
+class PostManager(models.Manager):
+    def get_published(self):
+        return self\
+            .filter(is_published=True)\
+            .order_by('-pk')
+    
 class Post(models.Model):
     class Meta:
         verbose_name = 'Post'
         verbose_name_plural = 'Posts'
+
+    objects = PostManager()
 
     title = models.CharField(max_length=65,)
     slug = models.SlugField(
@@ -136,9 +144,14 @@ class Post(models.Model):
     def __str__(self):
         return self.title
 
+    def get_absolute_url(self):
+        if not self.is_published:
+            return reverse('blog:index')
+        return reverse('blog:post', args=(self.slug,))
+
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify_new(self.title, 4)
+            self.slug = slugify(self.title, 4)
 
         current_cover_name = str(self.cover.name)
         super_save = super().save(*args, **kwargs)
